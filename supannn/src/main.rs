@@ -13,7 +13,7 @@ use std::thread;
 
 fn main() {
     let apps = load_apps().expect("failed to load apps.txt");
-    let listener = TcpListener::bind("127.0.0.1:1337").unwrap();
+    let listener = TcpListener::bind("0.0.0.0:31337").unwrap();
 
     for stream in listener.incoming() {
         let mut stream = stream.unwrap();

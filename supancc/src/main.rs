@@ -14,9 +14,9 @@ fn main() {
 
 
 fn render() -> Vec<u8> {
-    let mut s = TcpStream::connect("127.0.0.1:1337").expect("");
+    let mut s = TcpStream::connect("192.168.0.5:31337").expect("failed to connect");
     let mut r = BufReader::new(s.try_clone().expect(""));
-    _ = write!(&mut s, "Dmenger 500 1000 500 1000\0");
+    _ = write!(&mut s, "Dmenger 600 620 600 620\0");
     let mut _lenb = Vec::<u8>::new();
     r.read_until(0, &mut _lenb).expect("failed to read header");
     let mut res = Vec::<u8>::new();

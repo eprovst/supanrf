@@ -1,5 +1,7 @@
-Action package:
+Default port number: 31337
 
+
+Action package:
 
 Dcommand option1 option2 ...\0
 
@@ -8,9 +10,11 @@ Response package is just result data.
 
 INFO\0
 
-Response is Nxx with xx the number of threads.
+Response is Nxx\0 with xx the number of threads.
 
 
 Format of respose packages:
 
 length\0[data]
+
+Alternative name: ETP.
