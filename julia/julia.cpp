@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 
     auto c = complex<double>(-0.1, 0.65);
 
-    cout << "P2" << endl;
+    cout << "P5" << endl;
     cout << rres << ' ' << ires << ' ' << 255 << endl;
 
     double dr = (rmax - rmin) / rres;
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     for (int j = 0; j < ires; j++) {
         for (int i = 0; i < rres; i++) {
             auto z = complex<double>(rmin + i*dr, imax - j*di);
-            cout << (short) (255 * julia(z, c)) << endl;
+            cout << (char) (255 * julia(z, c));
         }
     }
 
