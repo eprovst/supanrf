@@ -58,7 +58,7 @@ fn load_apps() -> Result<Vec<String>, Error> {
 fn run_app<W: Write>(out: &mut W, app: String, args: Vec<String>, apps: &Vec<String>) {
     // This line does all the hevy lifting when it comes to security
     if apps.contains(&app) {
-        if let Ok(output) = Command::new(app).args(args).output() {
+        if let Ok(output) = Command::new(app).env("PATH", ".").args(args).output() {
             let stdout = output.stdout;
             _ = write!(out, "{}\0", stdout.len());
             _ = out.write_all(stdout.as_slice());

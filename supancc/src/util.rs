@@ -1,11 +1,11 @@
 use image::io::Reader;
 use slint::{Image, Rgb8Pixel, SharedPixelBuffer};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Error, Seek};
+use std::io::{BufRead, BufReader, Error, Cursor};
 
-pub fn load_image<R: BufRead + Seek>(input: R) -> Result<Image, String> {
+pub fn load_image(input: Vec<u8>) -> Result<Image, String> {
     // dear authors of image, why did you not implement From<ImageError> for String???!!!
-    let rdr = Reader::new(input)
+    let rdr = Reader::new(Cursor::new(input))
         .with_guessed_format()
         .map_err(|e| e.to_string())?
         .decode()

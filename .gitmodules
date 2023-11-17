@@ -1,0 +1,3 @@
+[submodule "srray"]
+	path = srray
+	url = git@github.com:eprovst/srray

@@ -1,14 +1,8 @@
-use std::fs::File;
-use std::io::BufReader;
+use slint::Image;
 
-use crate::util::load_image;
-
-pub fn gui_loop() {
+pub fn gui_loop(img: Image) {
     let main_window = MainWindow::new().unwrap();
-
-    let img = load_image(BufReader::new(File::open("out.ppm").unwrap())).unwrap();
     main_window.set_output(img);
-
     main_window.run().unwrap();
 }
 
