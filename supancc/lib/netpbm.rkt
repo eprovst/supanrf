@@ -29,7 +29,7 @@
   (define height (second header))
   (unless (equal? (third header) 255)
     (error "range header not equal to 255"))
-  (define bmp (make-bitmap width height #f))
+  (define bmp (make-bitmap width height))
   (send bmp set-argb-pixels
         0 0 width height
         (g->argb (port->bytes img-in)))
@@ -44,7 +44,7 @@
   (define height (second header))
   (unless (equal? (third header) 255)
     (error "range header not equal to 255"))
-  (define bmp (make-bitmap width height #f))
+  (define bmp (make-bitmap width height))
   (send bmp set-argb-pixels
         0 0 width height
         (rgb->argb (port->bytes img-in)))
