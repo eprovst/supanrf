@@ -12,12 +12,16 @@
 
 (define (etp/command-unsafe-port ip command)
   (define-values
-    (in out) (tcp-connect ip 31337))
+    (in out) (tcp-connect/enable-break ip 31337))
   (display (string-append command "\0") out)
   (flush-output out)
-  (discard-nulls in)
   (close-output-port out)
-  in)
+  (with-handlers
+      ([exn:break? (λ (err)
+                     (close-input-port in)
+                     (raise err))])
+    (discard-nulls in)
+    in))
 
 (define (discard-nulls in-port)
   (when (equal? (peek-byte in-port) 0)
