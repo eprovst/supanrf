@@ -68,7 +68,7 @@ fn render<W: Write>(
     let c = Complex::new(-0.1, 0.65);
 
     write!(out, "P5\n")?;
-    write!(out, "{} {} {}\n", xres, yres, u8::MAX)?;
+    write!(out, "{} {} {}\n", xmax - xmin, ymax - ymin, u8::MAX)?;
 
     let (rmin, rmax, imin, imax) = (-1.5, 1.5, -1.5, 1.5);
     let dr = (rmax - rmin) / (xres as f64);
