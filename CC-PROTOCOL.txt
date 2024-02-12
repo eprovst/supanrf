@@ -15,6 +15,9 @@ Response is Nxx\0 with xx the number of threads.
 
 Format of respose packages:
 
+A sequence of periodic \0 bytes to check whether the connection is still
+alive, followed by:
+
 length\0[data]
 
 Alternative name: ETP.
