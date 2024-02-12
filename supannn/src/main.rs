@@ -31,7 +31,7 @@ fn main() {
             exit(1);
         }
     } else {
-        println!("[main] ERROR: failed to load apps.txt.");
+        println!("[main] ERROR: failed to load 'apps.txt'.");
         exit(1);
     }
 }
@@ -65,8 +65,8 @@ fn handle_connection(id: u16, stream: &mut TcpStream, apps: &Vec<String>) {
                         }
                     }
                     'I' => info(id, stream),
-                    _ => {
-                        println!("[{}] WARN: unknown request, dropping.", id);
+                    t => {
+                        println!("[{}] WARN: unknown request type '{}', dropping.", id, t);
                     }
                 }
             } else {
@@ -185,14 +185,16 @@ fn run_app(id: u16, stream: &mut TcpStream, app: String, args: Vec<String>, apps
         }
     } else {
         // App is not allowed
-        println!("[{}] WARN: '{}' not in apps.txt, dropping.", id, app);
+        println!("[{}] WARN: '{}' not in 'apps.txt', dropping.", id, app);
     }
 }
 
 fn info(id: u16, stream: &mut TcpStream) {
     if let Ok(n) = thread::available_parallelism() {
         _ = write!(stream, "N{}\0", n);
+        println!("[{}] INFO: sent info.", id);
     } else {
-        println!("[{}] WARN: could not read number of threads, dropping.", id);
+        _ = write!(stream, "N1\0");
+        println!("[{}] WARN: could not read number of threads, assuming one.", id);
     }
 }
