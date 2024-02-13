@@ -9,6 +9,30 @@
   (unless (void? res)
     (netpbm/parse res)))
 
+(define bitmap-canvas%
+  (class canvas%
+    (define bmp (make-bitmap 1 1))
+    (super-new
+     [paint-callback
+      (λ (canvas dc)
+        (send canvas set-canvas-background (make-color 124 124 124))
+        (send dc set-smoothing 'aligned)
+        (define scale
+          (min 2
+               (/ (send canvas get-width) (send bmp get-width))
+               (/ (send canvas get-height) (send bmp get-height))))
+        (send dc set-scale scale scale)
+        (define x-offset
+          (/ (- (/ (send canvas get-width) scale) (send bmp get-width)) 2))
+        (define y-offset
+          (/ (- (/ (send canvas get-height) scale) (send bmp get-height)) 2))
+        (send dc draw-bitmap bmp x-offset y-offset))])
+    (define/public (get-bitmap)
+      bmp)
+    (define/public (set-bitmap bitmap)
+      (set! bmp bitmap)
+      (send this refresh))))
+
 (define (main)
   (define frame (new frame%
                      [label "Super-Android Control Centre"]
@@ -17,17 +41,17 @@
 
   (define hpane (new horizontal-pane% [parent frame]))
 
-  (define ipane (new pane%
-                     [parent hpane]
-                     [alignment '(center center)]))
+  (define image (new bitmap-canvas%
+                     [parent hpane]))
 
-  (define image (new message%
-                     [parent ipane]
-                     [label (make-bitmap 10 10)]
-                     [auto-resize #t]))
-
-  (define vpane (new vertical-pane%
+  (define vpane (new vertical-panel%
                      [parent hpane]
+                     [stretchable-width #f]
+                     [spacing 12]
+                     [border 12]
+                     [vert-margin 6]
+                     [horiz-margin 6]
+                     [style '(border)]
                      [alignment '(center center)]))
 
   (define choice (new choice%
@@ -52,7 +76,7 @@
                                            (send message set-label "")
                                            (if (void? outp)
                                                (send message set-label "Render failed.")
-                                               (send image set-label outp))))))
+                                               (send image set-bitmap outp))))))
                          (begin
                            (send render-button set-label "Render")
                            (break-thread worker 'terminate)
