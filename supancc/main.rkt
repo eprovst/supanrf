@@ -4,8 +4,11 @@
   "lib/etp.rkt"
   "lib/netpbm.rkt")
 
-(define (render command)
-  (define res (etp/cli "localhost" command))
+(define (render command width height)
+  (define res
+    (etp/cli "localhost"
+             (format "~a ~a ~a 0 ~a 0 ~a"
+                     command width height width height)))
   (unless (void? res)
     (netpbm/parse res)))
 
@@ -57,8 +60,18 @@
   (define choice (new choice%
                       [parent vpane]
                       [label "Demo"]
-                      [choices (list "julia 600 600 0 600 0 600"
-                                     "menger 200 200 0 200 0 200")]))
+                      [choices (list "julia"
+                                     "menger")]))
+
+  (define width-field (new text-field%
+                           [parent vpane]
+                           [label "Width"]
+                           [init-value "600"]))
+
+  (define height-field (new text-field%
+                            [parent vpane]
+                            [label "Height"]
+                            [init-value "600"]))
 
   (define worker null)
 
@@ -71,7 +84,10 @@
                            (send render-button set-label "Stop")
                            (set! worker
                                  (thread (λ ()
-                                           (define outp (render (send choice get-string-selection)))
+                                           (define outp (render
+                                                         (send choice get-string-selection)
+                                                         (send width-field get-value)
+                                                         (send height-field get-value)))
                                            (send render-button set-label "Render")
                                            (send message set-label "")
                                            (if (void? outp)
