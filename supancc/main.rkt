@@ -4,6 +4,7 @@
   "lib/etp.rkt"
   "lib/netpbm.rkt")
 
+;; Temporary render command
 (define (render command width height)
   (define res
     (etp/cli "localhost"
@@ -12,6 +13,7 @@
   (unless (void? res)
     (netpbm/parse res)))
 
+;; Centring and scaling image viewer
 (define bitmap-canvas%
   (class canvas%
     (define bmp (make-bitmap 1 1))
@@ -36,76 +38,95 @@
       (set! bmp bitmap)
       (send this refresh))))
 
-(define (main)
-  (define frame (new frame%
-                     [label "Super-Android Control Centre"]
-                     [width 600]
-                     [height 400]))
+;; Input field only accepting numbers
+(define number-field%
+  (class text-field%
+    (super-new
+     [callback
+      (λ (fld event)
+        (send this set-value
+              (list->string
+               (filter char-numeric?
+                       (string->list
+                        (send this get-value))))))])))
 
-  (define hpane (new horizontal-pane% [parent frame]))
+;; Main window
+(define frame (new frame%
+                   [label "Super-Android Control Centre"]
+                   [width 600]
+                   [height 400]))
 
-  (define image (new bitmap-canvas%
-                     [parent hpane]))
+;; Horizontally:
+(define hpane (new horizontal-pane% [parent frame]))
 
-  (define vpane (new vertical-panel%
-                     [parent hpane]
-                     [stretchable-width #f]
-                     [spacing 12]
-                     [border 12]
-                     [vert-margin 6]
-                     [horiz-margin 6]
-                     [style '(border)]
-                     [alignment '(center center)]))
+;; * The image
+(define image (new bitmap-canvas%
+                   [parent hpane]))
 
-  (define choice (new choice%
-                      [parent vpane]
-                      [label "Demo"]
-                      [choices (list "julia"
-                                     "menger")]))
+;; * Vertically:
+(define vpane (new vertical-panel%
+                   [parent hpane]
+                   [stretchable-width #f]
+                   [spacing 12]
+                   [border 12]
+                   [vert-margin 6]
+                   [horiz-margin 6]
+                   [style '(border)]
+                   [alignment '(center center)]))
 
-  (define width-field (new text-field%
-                           [parent vpane]
-                           [label "Width"]
-                           [init-value "600"]))
+;; ** The demo picker
+(define demo-choice (new choice%
+                    [parent vpane]
+                    [label "Demo"]
+                    [choices '("julia" "menger")]))
 
-  (define height-field (new text-field%
-                            [parent vpane]
-                            [label "Height"]
-                            [init-value "600"]))
+;; ** The width option
+(define width-field (new number-field%
+                         [parent vpane]
+                         [label "Width"]
+                         [init-value "600"]))
 
-  (define worker null)
+;; ** The height option
+(define height-field (new number-field%
+                          [parent vpane]
+                          [label "Height"]
+                          [init-value "600"]))
 
-  (define render-button
-    (new button% [parent vpane]
-         [label "Render"]
-         [callback (λ (button event)
-                     (if (or (null? worker) (thread-dead? worker))
-                         (begin
-                           (send render-button set-label "Stop")
-                           (set! worker
-                                 (thread (λ ()
-                                           (define outp (render
-                                                         (send choice get-string-selection)
-                                                         (send width-field get-value)
-                                                         (send height-field get-value)))
-                                           (send render-button set-label "Render")
-                                           (send message set-label "")
-                                           (if (void? outp)
-                                               (send message set-label "Render failed.")
-                                               (send image set-bitmap outp))))))
-                         (begin
-                           (send render-button set-label "Render")
-                           (break-thread worker 'terminate)
-                           (thread-wait worker)
-                           (send message set-label "Render stopped."))))]))
+;; ** The render/stop button
+(define worker null) ; worker thread
 
-  (define message (new message%
-                     [parent vpane]
-                     [label ""]
-                     [auto-resize #t]))
+(define (render-click button event)
+  (if (or (null? worker) (thread-dead? worker))
+      (begin
+        (send render-button set-label "Stop")
+        (set! worker
+              (thread (λ ()
+                        (define outp (render
+                                      (send demo-choice get-string-selection)
+                                      (send width-field get-value)
+                                      (send height-field get-value)))
+                        (send render-button set-label "Render")
+                        (send error-message set-label "")
+                        (if (void? outp)
+                            (send error-message set-label "Render failed.")
+                            (send image set-bitmap outp))))))
+      (begin
+        (send render-button set-label "Render")
+        (break-thread worker 'terminate)
+        (thread-wait worker)
+        (send error-message set-label "Render stopped."))))
 
-  (send frame show #t)
-  (void))
+(define render-button
+  (new button% [parent vpane]
+       [label "Render"]
+       [callback render-click]))
 
-(main)
+;; ** The error message
+(define error-message (new message%
+                   [parent vpane]
+                   [label ""]
+                   [auto-resize #t]))
+
+;; Show the window
+(send frame show #t)
 
