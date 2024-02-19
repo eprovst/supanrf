@@ -3,6 +3,7 @@
 (require
   racket/class
   racket/draw
+  racket/math
   racket/list
   racket/async-channel
   "etp.rkt"
@@ -52,9 +53,9 @@
       (if (zero? n)
         '()
         (begin
-          (let* ([sn (inexact->exact (ceiling (sqrt n)))]
-                 [dx (/ width sn)]
-                 [dy (/ height sn)])
+          (let* ([sn (exact-ceiling (sqrt n))]
+                 [dx (exact-ceiling (/ width sn))]
+                 [dy (exact-ceiling (/ height sn))])
             (for*/list ([i (in-range sn)]
                         [j (in-range sn)])
               (list (* i dx) (min (* (add1 i) dx) width)
