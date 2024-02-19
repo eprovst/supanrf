@@ -1,17 +1,12 @@
 #lang racket/gui
 
 (require
-  "lib/etp.rkt"
-  "lib/netpbm.rkt")
+ racket/list
+ "lib/renderfarm.rkt"
+ "lib/thread-utils.rkt")
 
-;; Temporary render command
-(define (render command width height)
-  (define res
-    (etp/cli "localhost"
-             (format "~a ~a ~a 0 ~a 0 ~a"
-                     command width height width height)))
-  (unless (void? res)
-    (netpbm/parse res)))
+;; Initialize the renderfarm
+(define farm (new renderfarm% [nodes (file->lines "nodes.txt")]))
 
 ;; Centring and scaling image viewer
 (define bitmap-canvas%
@@ -103,15 +98,17 @@
         (send render-button set-label "Stop")
         (set! worker
               (thread (λ ()
-                        (define outp (render
-                                      (send demo-choice get-string-selection)
-                                      (send width-field get-value)
-                                      (send height-field get-value)))
+                        (define farm-thread (send farm start-render-async
+                                              (send demo-choice get-string-selection)
+                                              (string->number (send width-field get-value))
+                                              (string->number (send height-field get-value))
+                                              (λ () (send image refresh))))
+                        (send image set-bitmap (send farm get-buffer))
+                        (thread-wait-break farm-thread)
                         (send render-button set-label "Render")
-                        (send error-message set-label "")
-                        (if (void? outp)
-                            (send error-message set-label "Render failed.")
-                            (send image set-bitmap outp))))))
+                        (if (equal? (send farm get-status) 'success)
+	                        (send error-message set-label "")
+                            (send error-message set-label "Render failed."))))))
       (begin
         (send render-button set-label "Render")
         (break-thread worker 'terminate)
@@ -131,4 +128,3 @@
 
 ;; Show the window
 (send frame show #t)
-
