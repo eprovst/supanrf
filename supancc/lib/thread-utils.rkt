@@ -2,7 +2,8 @@
 
 (provide
   threads-wait-break
-  thread-wait-break)
+  thread-wait-break
+  unbreaking)
 
 (define (threads-wait-break trds)
   (with-handlers ([exn:break:hang-up?
@@ -15,3 +16,8 @@
 
 (define (thread-wait-break trd)
   (threads-wait-break (list trd)))
+
+(define (unbreaking tnk)
+  (λ ()
+    (with-handlers ([exn:break? (λ (e) e)])
+      (tnk))))
