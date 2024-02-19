@@ -44,11 +44,13 @@
     (super-new
      [callback
       (λ (fld event)
-        (send this set-value
-              (list->string
-               (filter char-numeric?
-                       (string->list
-                        (send this get-value))))))])))
+        (let* ([chars (string->list (send this get-value))]
+               [editor (send this get-editor)]
+               [cursor (send editor get-start-position)])
+          (unless (andmap char-numeric? chars)
+            (send this set-value
+                  (list->string (filter char-numeric? chars)))
+            (send editor set-position (- cursor 1)))))])))
 
 ;; Main window
 (define frame (new frame%
