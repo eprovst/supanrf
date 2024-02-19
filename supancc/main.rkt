@@ -106,8 +106,8 @@
                         (send image set-bitmap (send farm get-buffer))
                         (thread-wait-break farm-thread)
                         (send render-button set-label "Render")
-                        (if (equal? (send farm get-status) 'success)
-	                        (send error-message set-label "")
+                        (if (equal? (send farm get-result) 'success)
+                            (send error-message set-label "")
                             (send error-message set-label "Render failed."))))))
       (begin
         (send render-button set-label "Render")
