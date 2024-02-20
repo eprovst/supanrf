@@ -17,6 +17,8 @@
   (class object%
     (init-field nodes)
 
+    (init-field (splitting-factor 20))
+
     (field (passive-nodes null))
 
     (field (buffer (make-bitmap 1 1)))
@@ -84,7 +86,7 @@
                 (begin
                   (set! status 'busy)
                   (threads-wait-break
-                    (for/list ([segment (shuffle (split-image width height (* 2 num-nodes)))])
+                    (for/list ([segment (shuffle (split-image width height (* splitting-factor num-nodes)))])
                       (let ([xmin (list-ref segment 0)]
                             [xmax (list-ref segment 1)]
                             [ymin (list-ref segment 2)]
