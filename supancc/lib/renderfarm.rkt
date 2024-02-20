@@ -50,14 +50,17 @@
       number)
 
     (define/private (split-image width height n)
-      (if (zero? n)
+      (if (or (zero? n) (zero? width) (zero? height))
         '()
         (begin
-          (let* ([sn (exact-ceiling (sqrt n))]
-                 [dx (exact-ceiling (/ width sn))]
-                 [dy (exact-ceiling (/ height sn))])
-            (for*/list ([i (in-range sn)]
-                        [j (in-range sn)])
+          (let* ([f (/ height width)]
+                 [2ns (* 2 (exact-ceiling (sqrt n)))]
+                 [nx (min (exact-ceiling (sqrt (/ n f))) 2ns)]
+                 [ny (min (exact-ceiling (* f nx)) 2ns)]
+                 [dx (exact-ceiling (/ width nx))]
+                 [dy (exact-ceiling (/ height ny))])
+            (for*/list ([i (in-range nx)]
+                        [j (in-range ny)])
               (list (* i dx) (min (* (add1 i) dx) width)
                     (* j dy) (min (* (add1 j) dy) height)))))))
 
@@ -68,7 +71,7 @@
             (thread (λ () (void))))
           (begin
             ;; buffer needs to exist on return
-            (set! buffer (make-bitmap width height))
+            (set! buffer (make-bitmap (max 1 width) (max 1 height)))
             (set! result 'pending)
             (thread (λ ()
               (define num-nodes (collect-nodes))
