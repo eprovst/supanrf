@@ -1,0 +1,24 @@
+#!/bin/sh
+
+TPATH="/data/data/com.termux/files/usr/bin/"
+echo $1
+# Copy
+for d in supannn julia menger srray
+do
+    echo $d
+    ssh -p 2222 root@$1 "mkdir -p $d/src"
+    scp -P 2222 ./$d/Cargo.toml root@$1:$d/Cargo.toml
+    scp -P 2222 ./$d/src/*.rs root@$1:$d/src/
+done
+# Compile
+for d in supannn julia menger
+do
+    echo $d
+    ssh -p 2222 root@$1 "mkdir -p $d/src"
+    scp -P 2222 ./$d/Cargo.toml root@$1:$d/Cargo.toml
+    scp -P 2222 ./$d/src/*.rs root@$1:$d/src/
+    ssh -p 2222 root@$1 -- "cd ./$d; su -c \"PATH=$TPATH $(echo $TPATH)cargo --offline build --release\""
+    ssh -p 2222 root@$1 "ln -sf ../$d/target/release/$d ./supannn/$d"
+done
+# Allow list
+scp -P 2222 ./supannn/apps.txt root@$1:./supannn/apps.txt
