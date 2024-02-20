@@ -3,6 +3,8 @@
 (provide
   threads-wait-break
   thread-wait-break
+  threads-timeout
+  thread-timeout
   unbreaking)
 
 (define (threads-wait-break trds)
@@ -16,6 +18,15 @@
 
 (define (thread-wait-break trd)
   (threads-wait-break (list trd)))
+
+(define (threads-timeout trds slp)
+  (thread (λ ()
+            (sleep slp)
+            (map (λ (t) (break-thread t 'terminate)) trds)))
+  (threads-wait-break trds))
+
+(define (thread-timeout trd slp)
+  (threads-timeout (list trd)))
 
 (define (unbreaking tnk)
   (λ ()

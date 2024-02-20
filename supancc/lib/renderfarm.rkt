@@ -41,12 +41,16 @@
       (define number 0)
       (unless (equal? status 'busy)
         (set! passive-nodes (make-async-channel))
-        (for ([node (shuffle nodes)])
-          (let ([cores (etp/processors node)])
-            (unless (void? cores)
-              (for ([i (in-range cores)])
-                (async-channel-put passive-nodes node)
-                (set! number (add1 number)))))))
+          (threads-timeout
+            (for/list ([node (shuffle nodes)])
+              (thread
+                (λ ()
+                  (let ([cores (etp/processors node)])
+                    (unless (void? cores)
+                      (for ([i (in-range cores)])
+                        (async-channel-put passive-nodes node)
+                        (set! number (add1 number))))))))
+            0.4))
       number)
 
     (define/private (split-image width height n)
