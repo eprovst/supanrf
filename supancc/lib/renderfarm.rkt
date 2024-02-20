@@ -17,7 +17,9 @@
   (class object%
     (init-field nodes)
 
-    (init-field (splitting-factor 20))
+    (init-field (splitting-factor 2))
+
+    (init-field (timeout 1))
 
     (field (passive-nodes null))
 
@@ -43,16 +45,17 @@
       (define number 0)
       (unless (equal? status 'busy)
         (set! passive-nodes (make-async-channel))
-          (threads-timeout
-            (for/list ([node (shuffle nodes)])
-              (thread
-                (λ ()
-                  (let ([cores (etp/processors node)])
-                    (unless (void? cores)
-                      (for ([i (in-range cores)])
-                        (async-channel-put passive-nodes node)
-                        (set! number (add1 number))))))))
-            0.4))
+          (threads-wait-break
+            (threads-timeout
+              (for/list ([node (shuffle nodes)])
+                (thread
+                  (λ ()
+                    (let ([cores (etp/processors node)])
+                      (unless (void? cores)
+                        (for ([i (in-range cores)])
+                          (async-channel-put passive-nodes node)
+                          (set! number (add1 number))))))))
+              timeout)))
       number)
 
     (define/private (split-image width height n)
@@ -60,9 +63,9 @@
         '()
         (begin
           (let* ([f (/ height width)]
-                 [2ns (* 2 (exact-ceiling (sqrt n)))]
-                 [nx (min (exact-ceiling (sqrt (/ n f))) 2ns)]
-                 [ny (min (exact-ceiling (* f nx)) 2ns)]
+                 [2sn (* 2 (exact-ceiling (sqrt n)))]
+                 [nx (min (exact-ceiling (sqrt (/ n f))) 2sn)]
+                 [ny (min (exact-ceiling (* f nx)) 2sn)]
                  [dx (exact-ceiling (/ width nx))]
                  [dy (exact-ceiling (/ height ny))])
             (for*/list ([i (in-range nx)]

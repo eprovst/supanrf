@@ -6,7 +6,10 @@
  "lib/thread-utils.rkt")
 
 ;; Initialize the renderfarm
-(define farm (new renderfarm% [nodes (file->lines "nodes.txt")]))
+(define farm (new renderfarm%
+                  [splitting-factor 10]
+                  [timeout 0.4]
+                  [nodes (file->lines "nodes.txt")]))
 
 ;; Centring and scaling image viewer
 (define bitmap-canvas%

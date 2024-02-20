@@ -17,16 +17,16 @@
     (map (λ (t) (thread-wait t)) trds)))
 
 (define (thread-wait-break trd)
-  (threads-wait-break (list trd)))
+  (car (threads-wait-break (list trd))))
 
 (define (threads-timeout trds slp)
   (thread (λ ()
             (sleep slp)
             (map (λ (t) (break-thread t 'terminate)) trds)))
-  (threads-wait-break trds))
+  trds)
 
 (define (thread-timeout trd slp)
-  (threads-timeout (list trd)))
+  (car (threads-timeout (list trd))))
 
 (define (unbreaking tnk)
   (λ ()
