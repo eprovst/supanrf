@@ -23,6 +23,8 @@
 
     (field (passive-nodes null))
 
+    (field (number-of-nodes 0))
+
     (field (buffer (make-bitmap 1 1)))
 
     (field (status 'idle))
@@ -42,8 +44,8 @@
       (send this get-buffer))
 
     (define/private (collect-nodes)
-      (define number 0)
       (unless (equal? status 'busy)
+        (set! number-of-nodes 0)
         (set! passive-nodes (make-async-channel))
           (threads-wait-break
             (threads-timeout
@@ -54,9 +56,9 @@
                       (unless (void? cores)
                         (for ([i (in-range cores)])
                           (async-channel-put passive-nodes node)
-                          (set! number (add1 number))))))))
-              timeout)))
-      number)
+                          (set! number-of-nodes
+                                (add1 number-of-nodes))))))))
+              timeout))))
 
     (define/private (split-image width height n)
       (if (or (zero? n) (zero? width) (zero? height))
@@ -83,13 +85,14 @@
             (set! buffer (make-bitmap (max 1 width) (max 1 height)))
             (set! result 'pending)
             (thread (λ ()
-              (define num-nodes (collect-nodes))
-              (if (zero? num-nodes)
+              (collect-nodes)
+              (if (zero? number-of-nodes)
                 (set! result 'fail)
                 (begin
                   (set! status 'busy)
                   (threads-wait-break
-                    (for/list ([segment (shuffle (split-image width height (* splitting-factor num-nodes)))])
+                   (for/list ([segment (shuffle (split-image width height
+                                                             (* splitting-factor number-of-nodes)))])
                       (let ([xmin (list-ref segment 0)]
                             [xmax (list-ref segment 1)]
                             [ymin (list-ref segment 2)]
@@ -100,18 +103,40 @@
                   (set! status 'idle)))
               (unless (equal? result 'fail) (set! result 'success)))))))
 
+    (define/private (start-segment-render command xres yres
+                                          xmin xmax ymin ymax
+                                          [segment-callback (λ () '())])
+      (let ([node (async-channel-get passive-nodes)])
+        (if (null? node)
+            ;; no more nodes, inform the others and quit
+            (async-channel-put passive-nodes null)
+            ;; else do try to render
+            (let ([res (etp/cli node
+                                (format "~a ~a ~a ~a ~a ~a ~a"
+                                command xres yres xmin xmax ymin ymax))])
+              (if (void? res)
+                  ;; render failed, try again on other node
+                  (begin
+                    (set! number-of-nodes (sub1 number-of-nodes))
+                    (if (< number-of-nodes 1)
+                        (begin
+                          (set! result 'fail)
+                          ;; inform waiting threads of failure
+                          (async-channel-put passive-nodes null))
+                        (start-segment-render command xres yres
+                                              xmin xmax ymin ymax
+                                              segment-callback)))
+                  ;; render succeeded
+                  (begin
+                    (async-channel-put passive-nodes node)
+                    (send (send buffer make-dc)
+                          draw-bitmap (netpbm/parse res) xmin ymin)
+                    (segment-callback)))))))
+
     (define/private (start-segment-render-async command xres yres
                                                 xmin xmax ymin ymax
                                                 [segment-callback (λ () '())])
       (thread (unbreaking (λ ()
-        (let* ([node (async-channel-get passive-nodes)]
-               [res (etp/cli node
-                      (format "~a ~a ~a ~a ~a ~a ~a"
-                              command xres yres xmin xmax ymin ymax))])
-          (if (void? res) ; render failed
-              (set! result 'fail)
-              (begin
-                (async-channel-put passive-nodes node)
-                (send (send buffer make-dc)
-                      draw-bitmap (netpbm/parse res) xmin ymin)
-                (segment-callback))))))))))
+                (start-segment-render command xres yres
+                                      xmin xmax ymin ymax
+                                      segment-callback)))))))

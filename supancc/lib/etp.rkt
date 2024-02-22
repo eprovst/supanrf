@@ -15,18 +15,23 @@
     (in out) (tcp-connect/enable-break ip 31337))
   (display (string-append command "\0") out)
   (flush-output out)
-  (close-output-port out)
+  (tcp-abandon-port out)
   (with-handlers
       ([exn:break? (λ (err)
                      (close-input-port in)
                      (raise err))])
-    (discard-nulls in)
+    (await-heartbeats in)
     in))
 
-(define (discard-nulls in-port)
-  (when (equal? (peek-byte in-port) 0)
-    (read-byte in-port)
-    (discard-nulls in-port)))
+(define (await-heartbeats in-port)
+  ;; at least two per second, so waiting one second is plenty safe
+  ;; also check whether port is at all open
+  (if (and (sync/timeout/enable-break 1 in-port)
+           (not (eof-object? (peek-byte in-port))))
+    (when (equal? 0 (peek-byte in-port))
+      (read-byte in-port)
+      (await-heartbeats in-port))
+    (raise (make-exn:break))))
 
 (define (etp/command ip command)
   (with-handlers ([exn? (λ (err) (void))])

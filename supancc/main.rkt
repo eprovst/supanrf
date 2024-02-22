@@ -7,7 +7,7 @@
 
 ;; Initialize the renderfarm
 (define farm (new renderfarm%
-                  [splitting-factor 10]
+                  [splitting-factor 4]
                   [timeout 0.4]
                   [nodes (file->lines "nodes.txt")]))
 
@@ -99,6 +99,7 @@
   (if (or (null? worker) (thread-dead? worker))
       (begin
         (send render-button set-label "Stop")
+        (send error-message set-label "")
         (set! worker
               (thread (λ ()
                         (define farm-thread (send farm start-render-async
@@ -109,8 +110,7 @@
                         (send image set-bitmap (send farm get-buffer))
                         (thread-wait-break farm-thread)
                         (send render-button set-label "Render")
-                        (if (equal? (send farm get-result) 'success)
-                            (send error-message set-label "")
+                        (unless (equal? (send farm get-result) 'success)
                             (send error-message set-label "Render failed."))))))
       (begin
         (send render-button set-label "Render")
