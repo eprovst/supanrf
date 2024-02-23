@@ -18,7 +18,7 @@
     (super-new
      [paint-callback
       (λ (canvas dc)
-        (send canvas set-canvas-background (make-color 124 124 124))
+        (send canvas set-canvas-background (make-color 0 0 0))
         (send dc set-smoothing 'aligned)
         (define scale
           (min 2
@@ -53,7 +53,7 @@
 ;; Main window
 (define frame (new frame%
                    [label "Super-Android Control Centre"]
-                   [width 600]
+                   [width 700]
                    [height 400]))
 
 ;; Horizontally:
@@ -84,13 +84,13 @@
 (define width-field (new number-field%
                          [parent vpane]
                          [label "Width"]
-                         [init-value "600"]))
+                         [init-value "1280"]))
 
 ;; ** The height option
 (define height-field (new number-field%
                           [parent vpane]
                           [label "Height"]
-                          [init-value "600"]))
+                          [init-value "720"]))
 
 ;; ** The render/stop button
 (define worker null) ; worker thread

@@ -33,11 +33,15 @@
 
     (super-new)
 
-    (define/public (get-buffer)
-      buffer)
+    (define/public (get-buffer) buffer)
 
-    (define/public (get-result)
-      result)
+    (define/private (new-buffer width height)
+      (set! buffer (make-bitmap (max 1 width) (max 1 height)))
+      (let ([dc (send buffer make-dc)])
+        (send dc set-background (make-color 245 202 123))
+        (send dc clear)))
+
+    (define/public (get-result) result)
 
     (define/public (render command width height)
       (thread-wait-break (start-render-async command width height))
@@ -82,7 +86,7 @@
             (thread (λ () #f)))
           (begin
             ;; buffer needs to exist on return
-            (set! buffer (make-bitmap (max 1 width) (max 1 height)))
+            (new-buffer width height)
             (set! result 'pending)
             (thread (λ ()
               (collect-nodes)
