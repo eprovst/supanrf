@@ -53,7 +53,7 @@
                 (thread
                   (λ ()
                     (let ([cores (etp/processors node)])
-                      (unless (void? cores)
+                      (when cores
                         (for ([i (in-range cores)])
                           (async-channel-put passive-nodes node)
                           (set! number-of-nodes
@@ -79,7 +79,7 @@
       (if (equal? status 'busy)
           (begin
             (displayln "WARNING: already rendering, returning.")
-            (thread (λ () (void))))
+            (thread (λ () #f)))
           (begin
             ;; buffer needs to exist on return
             (set! buffer (make-bitmap (max 1 width) (max 1 height)))
@@ -114,7 +114,13 @@
             (let ([res (etp/cli node
                                 (format "~a ~a ~a ~a ~a ~a ~a"
                                 command xres yres xmin xmax ymin ymax))])
-              (if (void? res)
+              (if res
+                  ;; render succeeded
+                  (begin
+                    (async-channel-put passive-nodes node)
+                    (send (send buffer make-dc)
+                          draw-bitmap (netpbm/parse res) xmin ymin)
+                    (segment-callback))
                   ;; render failed, try again on other node
                   (begin
                     (set! number-of-nodes (sub1 number-of-nodes))
@@ -125,13 +131,7 @@
                           (async-channel-put passive-nodes null))
                         (start-segment-render command xres yres
                                               xmin xmax ymin ymax
-                                              segment-callback)))
-                  ;; render succeeded
-                  (begin
-                    (async-channel-put passive-nodes node)
-                    (send (send buffer make-dc)
-                          draw-bitmap (netpbm/parse res) xmin ymin)
-                    (segment-callback)))))))
+                                              segment-callback))))))))
 
     (define/private (start-segment-render-async command xres yres
                                                 xmin xmax ymin ymax

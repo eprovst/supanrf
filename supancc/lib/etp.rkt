@@ -2,11 +2,13 @@
 
 (require
   racket/tcp
-  racket/port)
+  racket/port
+  racket/string)
 
 (provide
   etp/command
   etp/cli
+  etp/info
   etp/ping
   etp/processors)
 
@@ -34,14 +36,14 @@
     (raise (make-exn:break))))
 
 (define (etp/command ip command)
-  (with-handlers ([exn? (λ (err) (void))])
+  (with-handlers ([exn? (λ (err) #f)])
     (define in (etp/command-unsafe-port ip command))
     (define res (port->bytes in))
     (close-input-port in)
     res))
 
 (define (etp/cli ip cli)
-  (with-handlers ([exn? (λ (err) (void))])
+  (with-handlers ([exn? (λ (err) #f)])
     (define in (etp/command-unsafe-port ip (string-append "D" cli)))
     (discard-prefix in)
     (define res (port->bytes in))
@@ -52,12 +54,21 @@
   (unless (equal? (read-byte in-port) 0)
     (discard-prefix in-port)))
 
-(define (etp/processors ip)
+(define (etp/info ip)
   (define info (etp/command ip "INFO"))
-  (unless (void? info)
-    (string->number
+  (and info
+    (string-split
       (bytes->string/latin-1
-        (subbytes info 1 (- (bytes-length info) 1))))))
+        (subbytes info 0 (sub1 (bytes-length info)))) ";")))
+
+(define (etp/processors ip)
+  (define fields (etp/info ip))
+  (and fields
+       (string->number
+        (substring
+         (car
+          (filter (λ (f) (equal? #\N (string-ref f 0))) fields))
+         1))))
 
 (define (etp/ping ip)
-  (not (void? (etp/command ip "INFO"))))
+  (not (not (etp/info ip))))

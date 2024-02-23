@@ -16,7 +16,9 @@ Info command:
 
 INFO\0
 
-Response is Nxx\0 with xx the number of threads.
+Response is [field][;field]*\0 where <field> is any of:
+
+ - Nxx  with xx the number of threads.
 
 
 Alternative name: ETP.
