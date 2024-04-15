@@ -5,11 +5,17 @@
  "lib/renderfarm.rkt"
  "lib/thread-utils.rkt")
 
+(define (load-nodes)
+  (with-handlers ([exn:fail? (λ (exn)
+                               (displayln "No file 'nodes.txt' listing servers line by line.")
+                               (exit 1))])
+    (file->lines "nodes.txt")))
+
 ;; Initialize the renderfarm
 (define farm (new renderfarm%
                   [splitting-factor 4]
                   [timeout 0.4]
-                  [nodes (file->lines "nodes.txt")]))
+                  [nodes (load-nodes)]))
 
 ;; Centring and scaling image viewer
 (define bitmap-canvas%
