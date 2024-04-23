@@ -1,2 +1,0 @@
-#!/bin/sh
-raco exe --orig-exe --gui -o supancc main.rkt
