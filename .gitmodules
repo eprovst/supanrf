@@ -1,6 +1,6 @@
-[submodule "srray"]
-	path = srray
-	url = git@github.com:eprovst/srray
 [submodule "etp"]
 	path = etp
-	url = git@github.com:eprovst/etp.git
+	url = https://github.com/eprovst/etp
+[submodule "srray"]
+	path = srray
+	url = https://github.com/eprovst/srray

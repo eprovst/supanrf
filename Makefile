@@ -1,15 +1,21 @@
 .PHONY : start-server start-client
-start-server: etp etp/apps.txt etp/menger etp/julia
-	@cd etp; cargo run --release
+start-server: etp/etp etp/apps.txt etp/menger etp/julia
+	@cd etp; ./etp
 
 start-client:
 	@cd supancc; racket main.rkt
 
-etp:
+etp/etp: etp/target/release/etp
+	ln -sf ../$< ./$@
+
+etp/target/release/etp: etp/src/main.rs
+	cd etp; cargo build --release
+
+etp/src/main.rs:
 	git submodule init
 	git submodule update
 
-etp/apps.txt:
+etp/apps.txt: etp/src/main.rs
 	rm -f etp/apps.txt
 	echo "menger" >> $@
 	echo "julia" >> $@
@@ -20,10 +26,10 @@ etp/menger: menger/target/release/menger
 etp/julia: julia/target/release/julia
 	ln -sf ../$< ./$@
 
-menger/target/release/menger: menger/src/main.rs srray
+menger/target/release/menger: menger/src/main.rs srray/src/lib.rs
 	cd menger; cargo build --release
 
-srray:
+srray/src/lib.rs:
 	git submodule init
 	git submodule update
 
