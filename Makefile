@@ -1,9 +1,12 @@
-.PHONY : start-server start-client
-start-server: etp/etp etp/apps.txt etp/menger etp/julia
-	@cd etp; ./etp
+.PHONY : all start-server start-client
+
+all: etp/etp etp/apps.txt etp/menger etp/julia
+
+start-server: all
+	@./start-server
 
 start-client:
-	@cd supancc; racket main.rkt
+	@./start-client
 
 etp/etp: etp/target/release/etp
 	ln -sf ../$< ./$@
