@@ -5,13 +5,38 @@
   racket/draw
   racket/math
   racket/list
+  racket/string
+  racket/format
   racket/async-channel
   "etp.rkt"
   "netpbm.rkt"
   "thread-utils.rkt")
 
 (provide
+  job%
   renderfarm%)
+
+(define job%
+  (class object%
+    (init-field command)
+
+    (init-field width)
+
+    (init-field height)
+
+    (init-field (options '()))
+
+    (super-new)
+
+    (define/public (get-width) width)
+
+    (define/public (get-height) height)
+
+    (define/public (get-command-string xmin xmax ymin ymax)
+      (string-join (map ~a
+                        (append (list command width height xmin xmax ymin ymax)
+                                options))
+                   " "))))
 
 (define renderfarm%
   (class object%
@@ -43,8 +68,8 @@
 
     (define/public (get-result) result)
 
-    (define/public (render command width height)
-      (thread-wait-break (start-render-async command width height))
+    (define/public (render job)
+      (thread-wait-break (start-render-async job))
       (send this get-buffer))
 
     (define/private (collect-nodes)
@@ -79,14 +104,14 @@
               (list (* i dx) (min (* (add1 i) dx) width)
                     (* j dy) (min (* (add1 j) dy) height)))))))
 
-    (define/public (start-render-async command width height [segment-callback (λ () '())])
+    (define/public (start-render-async job [segment-callback (λ () '())])
       (if (equal? status 'busy)
           (begin
             (displayln "WARNING: already rendering, returning.")
             (thread (λ () #f)))
           (begin
             ;; buffer needs to exist on return
-            (new-buffer width height)
+            (new-buffer (send job get-width) (send job get-height))
             (set! result 'pending)
             (thread (λ ()
               (collect-nodes)
@@ -95,19 +120,20 @@
                 (begin
                   (set! status 'busy)
                   (threads-wait-break
-                   (for/list ([segment (shuffle (split-image width height
+                   (for/list ([segment (shuffle (split-image (send job get-width)
+                                                             (send job get-height)
                                                              (* splitting-factor number-of-nodes)))])
                       (let ([xmin (list-ref segment 0)]
                             [xmax (list-ref segment 1)]
                             [ymin (list-ref segment 2)]
                             [ymax (list-ref segment 3)])
-                         (start-segment-render-async command width height
+                         (start-segment-render-async job
                                                      xmin xmax ymin ymax
                                                      segment-callback))))
                   (set! status 'idle)))
               (unless (equal? result 'fail) (set! result 'success)))))))
 
-    (define/private (start-segment-render command xres yres
+    (define/private (start-segment-render job
                                           xmin xmax ymin ymax
                                           [segment-callback (λ () '())])
       (let ([node (async-channel-get passive-nodes)])
@@ -115,9 +141,8 @@
             ;; no more nodes, inform the others and quit
             (async-channel-put passive-nodes null)
             ;; else do try to render
-            (let ([res (etp/cli node
-                                (format "~a ~a ~a ~a ~a ~a ~a"
-                                command xres yres xmin xmax ymin ymax))])
+            (let ([res (etp/cli node (send job get-command-string
+                                               xmin xmax ymin ymax))])
               (if res
                   ;; render succeeded
                   (begin
@@ -133,14 +158,14 @@
                           (set! result 'fail)
                           ;; inform waiting threads of failure
                           (async-channel-put passive-nodes null))
-                        (start-segment-render command xres yres
+                        (start-segment-render job
                                               xmin xmax ymin ymax
                                               segment-callback))))))))
 
-    (define/private (start-segment-render-async command xres yres
+    (define/private (start-segment-render-async job
                                                 xmin xmax ymin ymax
                                                 [segment-callback (λ () '())])
       (thread (unbreaking (λ ()
-                (start-segment-render command xres yres
+                (start-segment-render job
                                       xmin xmax ymin ymax
                                       segment-callback)))))))

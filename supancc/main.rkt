@@ -108,11 +108,11 @@
         (send error-message set-label "")
         (set! worker
               (thread (λ ()
+                        (define job (new job% (command (send demo-choice get-string-selection))
+                                              (width (string->number (send width-field get-value)))
+                                              (height (string->number (send height-field get-value)))))
                         (define farm-thread (send farm start-render-async
-                                              (send demo-choice get-string-selection)
-                                              (string->number (send width-field get-value))
-                                              (string->number (send height-field get-value))
-                                              (λ () (send image refresh))))
+                                                  job (λ () (send image refresh))))
                         (send image set-bitmap (send farm get-buffer))
                         (thread-wait-break farm-thread)
                         (send render-button set-label "Render")
