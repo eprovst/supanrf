@@ -2,14 +2,15 @@
 
 (require
   racket/tcp
+  racket/udp
   racket/port
   racket/string)
 
 (provide
+  etp/autodiscover
   etp/command
   etp/cli
   etp/info
-  etp/ping
   etp/processors)
 
 (define (etp/command-unsafe-port ip command)
@@ -70,5 +71,22 @@
           (filter (λ (f) (equal? #\N (string-ref f 0))) fields))
          1))))
 
-(define (etp/ping ip)
-  (not (not (etp/info ip))))
+(define (etp/collect-ad-replies socket time-out)
+  (let ([reply (bytes 0)]
+        [start-milliseconds (current-inexact-milliseconds)])
+    (if (sync/timeout/enable-break (/ time-out 1e3) (udp-receive-ready-evt socket))
+      (let-values ([(amt src srcp) (udp-receive!/enable-break socket reply)]
+                   [(new-time-out) (- time-out (- (current-inexact-milliseconds)
+                                                  start-milliseconds))])
+        (if (and (bytes=? reply #"P") (= amt 1))
+          (cons src (etp/collect-ad-replies socket new-time-out))
+          (etp/collect-ad-replies socket new-time-out)))
+      '())))
+
+(define (etp/autodiscover baddr (time-out 500))
+  (let ([socket (udp-open-socket)])
+    (udp-bind! socket #f 0)
+    (udp-send-to/enable-break socket baddr 31337 #"P")
+    (let ([servers (etp/collect-ad-replies socket time-out)])
+      (udp-close socket)
+      servers)))

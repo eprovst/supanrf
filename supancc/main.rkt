@@ -2,14 +2,16 @@
 
 (require
  racket/list
+ "lib/etp.rkt"
  "lib/renderfarm.rkt"
  "lib/thread-utils.rkt")
 
 (define (load-nodes)
   (with-handlers ([exn:fail? (λ (exn)
-                               (displayln "No file 'nodes.txt' listing servers line by line.")
+                               (displayln "No file 'nodes.txt' listing servers or broadcast adresses line by line.")
                                (exit 1))])
-    (file->lines "nodes.txt")))
+    (apply append (map (lambda (addr) (etp/autodiscover addr 1000))
+                       (file->lines "nodes.txt")))))
 
 ;; Initialize the renderfarm
 (define farm (new renderfarm%
