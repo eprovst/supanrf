@@ -6,7 +6,7 @@
  "lib/renderfarm.rkt"
  "lib/thread-utils.rkt")
 
-(define (load-nodes)
+(define (discover-nodes)
   (with-handlers ([exn:fail? (λ (exn)
                                (displayln "No file 'nodes.txt' listing servers or broadcast adresses line by line.")
                                (exit 1))])
@@ -17,7 +17,7 @@
 (define farm (new renderfarm%
                   [splitting-factor 4]
                   [timeout 0.4]
-                  [nodes (load-nodes)]))
+                  [nodes (discover-nodes)]))
 
 ;; Centring and scaling image viewer
 (define bitmap-canvas%
@@ -64,6 +64,59 @@
                    [width 700]
                    [height 400]))
 
+;; Menu bar
+(define menu-bar (new menu-bar%
+                      [parent frame]))
+
+(define nodes-menu (new menu%
+                        [parent menu-bar]
+                        [label "Nodes"]))
+
+(define list-node-button
+  (new menu-item% [parent nodes-menu]
+       [label "List nodes"]
+       [callback (λ (button event)
+                   (let ([dialog (new dialog%
+                              [parent frame]
+                              [label "Current nodes"])])
+                     (new message%
+                          [label "Current nodes:"]
+                          [parent dialog])
+                     (if (empty? (send farm get-nodes))
+                         (new message%
+                              [label "No nodes were detected."]
+                              [parent dialog])
+                         (new message%
+                              [label (string-join (send farm get-nodes) "\n")]
+                              [parent dialog]))
+                     (send dialog show #t)))]))
+
+(define discover-nodes-button
+  (new menu-item% [parent nodes-menu]
+       [label "Discover nodes"]
+       [callback (λ (button event)
+                    (send farm set-nodes! (discover-nodes)))]))
+
+(define info-menu (new menu%
+                       [parent menu-bar]
+                       [label "Info"]))
+
+(define about-button
+  (new menu-item%
+       [parent info-menu]
+       [label "About"]
+       [callback (λ (button event)
+                    (let ([dialog (new dialog%
+                                       [parent frame]
+                                       [label "About Super-Android"])])
+                      (new message% [parent dialog] [label "Super-Android"])
+                      (new message% [parent dialog] [label "A demonstration of parallel computing by NUMA\n"])
+                      (new message% [parent dialog] [label "Primary implementation:"])
+                      (new message% [parent dialog] [label "Evert Provoost"])
+                      (new message% [parent dialog] [label "Further contributions by:"])
+                      (new message% [parent dialog] [label "Simon Jacobsson, Daan Huybrechs, and Arne Bouillon"])
+                      (send dialog show #t)))]))
+
 ;; Horizontally:
 (define hpane (new horizontal-pane% [parent frame]))
 
@@ -79,7 +132,6 @@
                    [border 12]
                    [vert-margin 6]
                    [horiz-margin 6]
-                   [style '(border)]
                    [alignment '(center center)]))
 
 ;; ** The demo picker

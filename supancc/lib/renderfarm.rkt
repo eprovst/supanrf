@@ -68,6 +68,10 @@
 
     (define/public (get-result) result)
 
+    (define/public (get-nodes) nodes)
+
+    (define/public (set-nodes! new-nodes) (set! nodes new-nodes))
+
     (define/public (render job)
       (thread-wait-break (start-render-async job))
       (send this get-buffer))
