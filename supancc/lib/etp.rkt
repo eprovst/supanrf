@@ -71,7 +71,7 @@
           (filter (λ (f) (equal? #\N (string-ref f 0))) fields))
          1))))
 
-(define (etp/collect-ad-replies socket time-out)
+(define (etp/collect-ad-replies socket to-addr time-out)
   (let ([reply (bytes 0)]
         [start-milliseconds (current-inexact-milliseconds)])
     (if (sync/timeout/enable-break (/ time-out 1e3) (udp-receive-ready-evt socket))
@@ -79,14 +79,19 @@
                    [(new-time-out) (- time-out (- (current-inexact-milliseconds)
                                                   start-milliseconds))])
         (if (and (bytes=? reply #"P") (= amt 1))
-          (cons src (etp/collect-ad-replies socket new-time-out))
-          (etp/collect-ad-replies socket new-time-out)))
-      '())))
+            ;; If reply from the destination adress it was not a broadcast
+            ;; hence we are done, else collect other replies.
+            (if (string=? src to-addr)
+                (list src)
+                (cons src (etp/collect-ad-replies socket to-addr new-time-out)))
+            (etp/collect-ad-replies socket to-addr new-time-out)))
+      (list))))
 
 (define (etp/autodiscover baddr (time-out 500))
   (let ([socket (udp-open-socket)])
     (udp-bind! socket #f 0)
     (udp-send-to/enable-break socket baddr 31337 #"P")
-    (let ([servers (etp/collect-ad-replies socket time-out)])
+    (let ([servers (etp/collect-ad-replies socket baddr time-out)])
       (udp-close socket)
       servers)))
+

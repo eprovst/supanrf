@@ -1,11 +1,19 @@
 #lang racket/base
 
+(require racket/future)
+
 (provide
+  parmap
   threads-wait-break
   thread-wait-break
   threads-timeout
   thread-timeout
   unbreaking)
+
+(define (parmap f lst)
+  (map touch
+    (for/list ([x lst])
+      (future (λ () (f x))))))
 
 (define (threads-wait-break trds)
   (with-handlers ([exn:break:hang-up?
